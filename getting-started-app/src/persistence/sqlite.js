@@ -1,6 +1,10 @@
 const sqlite3 = require('sqlite3').verbose();
 const fs = require('fs');
-const location = process.env.SQLITE_DB_LOCATION || '/etc/todos/todo.db';
+const path = require('path');
+
+// Default to a repo-local todos folder so the app and tests work outside Docker.
+const location =
+    process.env.SQLITE_DB_LOCATION || path.join(__dirname, '..', '..', 'todos', 'todo.db');
 
 let db, dbAll, dbRun;
 
