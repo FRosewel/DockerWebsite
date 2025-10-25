@@ -173,7 +173,8 @@ The project includes a GitHub Actions workflow (`.github/workflows/ci-cd.yml`) t
 ## 📝 Development Notes
 
 - The application uses SQLite for data persistence
-- Database file is stored in `/etc/todos/todo.db` within the container
+ - Database file is stored in `/etc/todos/todo.db` within the container when running via Docker.
+ - For local development and tests (when `SQLITE_DB_LOCATION` isn't set) the application now falls back to a repo-local file at `todos/todo.db`.
 - Static files are served from the `static/` directory
 - All API responses are in JSON format
 
