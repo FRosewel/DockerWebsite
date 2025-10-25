@@ -1,0 +1,100 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+        cache: 'npm'
+        cache-dependency-path: getting-started-app/package-lock.json
+        
+    - name: Install dependencies
+      run: |
+        cd getting-started-app
+        npm install
+        
+    - name: Run tests
+      run: |
+        cd getting-started-app
+        npm test
+        
+    - name: Run linting
+      run: |
+        cd getting-started-app
+        npm run prettify -- --check "**/*.js"
+
+  build-and-test-docker:
+    runs-on: ubuntu-latest
+    needs: test
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Build Docker image
+      run: |
+        docker build -t my-personal-website .
+        
+    - name: Test Docker container
+      run: |
+        # Start container in background
+        docker run -d --name test-container -p 3000:3000 my-personal-website
+        
+        # Wait for container to start
+        sleep 10
+        
+        # Test if container is responding
+        curl -f http://localhost:3000/ || exit 1
+        
+        # Clean up
+        docker stop test-container
+        docker rm test-container
+        
+    - name: Run container tests
+      run: |
+        # Start container
+        docker run -d --name test-container -p 3000:3000 my-personal-website
+        
+        # Wait for startup
+        sleep 10
+        
+        # Run tests against container
+        cd getting-started-app
+        npm install
+        npm test
+        
+        # Clean up
+        docker stop test-container
+        docker rm test-container
+
+  deploy:
+    runs-on: ubuntu-latest
+    needs: [test, build-and-test-docker]
+    if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master'
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Deploy to GitHub Pages (if configured)
+      run: |
+        echo "Deployment step - ready for GitHub Pages or other deployment targets"
+        echo "Container is ready for deployment!"
+        
+    - name: Build production image
+      run: |
+        docker build -t my-personal-website:latest .
+        echo "Production image built successfully!"
